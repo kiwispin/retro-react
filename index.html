@@ -1,12 +1,15 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>RetroReact: Hobbyist</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
-    
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=VT323&display=swap" rel="stylesheet">
+    <link href="https://fonts.cdnfonts.com/css/seven-segment" rel="stylesheet">
+
     <!-- Firebase SDKs -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
@@ -18,7 +21,7 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-        
+
         let currentUser = null;
 
         const initAuth = async () => {
@@ -48,7 +51,7 @@
                     time: time,
                     mode: mode,
                     timestamp: Date.now(),
-                    userId: currentUser.uid 
+                    userId: currentUser.uid
                 });
             } catch (e) { console.error(e); }
         };
@@ -67,276 +70,331 @@
                     if (b.score !== a.score) return b.score - a.score;
                     return a.time - b.time;
                 });
-                return scores.slice(0, 10); 
+                return scores.slice(0, 10);
             } catch (e) { return []; }
         };
-        
+
         window.getCurrentUserId = () => currentUser ? currentUser.uid : null;
     </script>
 
     <style>
         :root {
-            --bg-mat: #2a2a2a; 
-            --pipe-grey: #888;
-            --led-off: #4a0404; 
-            --led-on: #ff1a1a; 
-            --led-dim: #600;
+            /* RADIO SHACK / HOBBYIST PALETTE */
+            --bg-mat: #1a1a1a;
+            /* Dark Grey Tabletop */
+            --box-plastic: #2a2a2a;
+            /* Standard Project Box Grey */
+            --box-highlight: #3a3a3a;
+            --box-shadow: #111;
+
+            /* Accents */
+            --accent-blue: #0066cc;
+            /* Science Fair Blue */
+            --accent-yellow: #ffcc00;
+            /* Wiring Yellow */
+            --accent-silver: #c0c0c0;
+            /* Potentiometer Silver */
+
+            /* Components */
+            --led-off: #4d0000;
+            --led-on: #ff3333;
+            --led-dim: #990000;
+
+            /* Text */
+            --text-main: #e0e0e0;
+            --text-dim: #aaa;
+            --text-label: #fff;
         }
 
         body {
+            /* Standard computer font for that "Manual" feel, or VCR OSD */
             font-family: 'Share Tech Mono', monospace;
             background-color: var(--bg-mat);
-            background-image: 
-                linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
-            background-size: 20px 20px;
-            color: #ccc;
+            /* Authentic "Particle Board" Desk Texture */
+            background-image:
+                url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.15'/%3E%3C/svg%3E");
+            color: var(--text-main);
             overflow: hidden;
-            touch-action: none; 
+            touch-action: none;
             -webkit-tap-highlight-color: transparent;
+            font-size: 1.2rem;
         }
 
-        /* --- THE PIPE --- */
+        /* --- THE PIPE (BREADBOARD AREA) --- */
         .pipe-assembly {
             position: relative;
-            width: 160px; 
+            width: 180px;
             height: 75vh;
             display: flex;
             flex-direction: column;
-            filter: drop-shadow(15px 15px 30px rgba(0,0,0,0.8));
+            filter: drop-shadow(5px 5px 15px rgba(0, 0, 0, 0.6));
         }
 
         .pipe-body {
             flex: 1;
-            /* Industrial Grey PVC look */
-            background: linear-gradient(90deg, #555 0%, #999 20%, #bbb 45%, #888 60%, #444 100%);
+            /* Printed Circuit Board / Breadboard Strip look */
+            background: #252525;
+            border: 2px solid #444;
             position: relative;
             display: flex;
             flex-direction: column-reverse;
-            justify-content: space-evenly; 
-            padding: 30px 0; 
-            box-shadow: inset 0 0 40px rgba(0,0,0,0.6);
+            justify-content: space-evenly;
+            padding: 30px 10px;
             border-radius: 4px;
-            border-top: 4px solid #777;
-            border-bottom: 4px solid #444;
-            z-index: 2; /* Sit above cable */
-        }
-        
-        .pipe-body::before {
-            content: '';
-            position: absolute;
-            top: 0; left: 10%; right: 10%; height: 10px;
-            background: radial-gradient(ellipse at center, #222 0%, transparent 70%);
-            opacity: 0.5;
-        }
-        .pipe-body::after {
-            content: '';
-            position: absolute;
-            bottom: 0; left: 10%; right: 10%; height: 10px;
-            background: radial-gradient(ellipse at center, #222 0%, transparent 70%);
-            opacity: 0.5;
+            /* Vertical pinstripe to look like a breadboard column */
+            background-image: linear-gradient(90deg, transparent 48%, rgba(255, 255, 255, 0.05) 50%, transparent 52%);
+            z-index: 2;
         }
 
-        /* --- POWER CABLE --- */
-        .power-connector {
-            position: absolute;
-            bottom: -15px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 14px;
-            height: 25px;
-            background: #1a1a1a;
-            border-radius: 2px;
-            border: 1px solid #333;
-            box-shadow: 0 5px 10px rgba(0,0,0,0.5);
-            z-index: 1;
-        }
-        
-        .power-wire {
-            position: absolute;
-            top: 100%; /* Starts at bottom of connector */
-            left: 50%;
-            transform: translateX(-50%);
-            width: 4px; /* Thin small cable */
-            height: 100vh; /* Goes off screen */
-            background: #111;
-            box-shadow: 1px 0 2px rgba(255,255,255,0.05); /* Highlight */
-        }
-
-        /* --- VERTICAL LED COMPONENTS --- */
+        /* --- 5MM LEDS --- */
         .led-slot {
-            width: 20px; 
-            height: 6%; 
-            margin: 0 auto; 
-            background: #000; 
-            box-shadow: inset 1px 1px 3px rgba(0,0,0,1), 1px 1px 0 rgba(255,255,255,0.2); 
-            padding: 0;
-            position: relative;
+            width: 32px;
+            height: 32px;
+            /* Square slot for round bulb */
+            margin: 0 auto;
+            background: transparent;
             display: flex;
             align-items: center;
             justify-content: center;
-        }
-        
-        .led-bulb {
-            width: 100%;
-            height: 100%;
-            background-color: var(--led-off);
-            border-radius: 1px;
-            border-top: 1px solid rgba(255,255,255,0.2);
-            border-left: 1px solid rgba(255,255,255,0.1);
-            border-right: 1px solid rgba(0,0,0,0.5);
-            border-bottom: 1px solid rgba(0,0,0,0.5);
-            /* NO TRANSITION - INSTANT ON/OFF for realistic LED physics */
-            transition: none; 
             position: relative;
-            transform: translateZ(2px);
-            box-shadow: 1px 1px 3px rgba(0,0,0,0.6);
         }
-        
-        .led-bulb::after {
+
+        /* The Printed socket marking */
+        .led-slot::before {
             content: '';
             position: absolute;
-            top: 2px; left: 2px; right: 2px; height: 30%;
-            background: linear-gradient(to bottom, rgba(255,255,255,0.2), transparent);
-            border-radius: 1px;
+            width: 100%;
+            height: 100%;
+            border: 1px dashed #555;
+            border-radius: 50%;
+            opacity: 0.3;
+        }
+
+        .led-bulb {
+            width: 20px;
+            height: 20px;
+            background-color: var(--led-off);
+            border-radius: 50%;
+            /* Round 5mm bulb */
+            /* Plastic Dome shader */
+            background-image: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.4) 0%, transparent 40%);
+            border: 1px solid rgba(0, 0, 0, 0.5);
+            box-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+            transition: all 0.05s;
         }
 
         .led-slot.active .led-bulb {
             background-color: var(--led-on);
-            box-shadow: 0 0 15px #ff0000, 0 0 30px #ff0000; 
-            border-color: #ff5555; 
-            z-index: 10;
+            /* Active Diffused Glow */
+            box-shadow:
+                0 0 10px var(--led-on),
+                inset 2px 2px 5px rgba(255, 255, 255, 0.5);
+            border-color: #ff8888;
+            transform: scale(1.05);
         }
 
         .led-slot.completed .led-bulb {
-            background-color: var(--led-dim); 
-            box-shadow: 0 0 5px rgba(255, 0, 0, 0.3);
-            border-color: #800;
+            background-color: var(--led-dim);
+            box-shadow: none;
+            opacity: 0.7;
         }
 
-        /* --- THE SIDE SWITCH --- */
+        /* --- COMPONENT SWITCH --- */
         .switch-assembly {
             position: absolute;
-            bottom: 12%; 
-            right: -32px; 
+            bottom: 15%;
+            right: -45px;
             width: 40px;
-            height: 40px;
+            height: 50px;
             z-index: 5;
             display: flex;
             align-items: center;
-        }
-
-        .switch-housing {
-            width: 15px;
-            height: 30px;
-            background: linear-gradient(to bottom, #888, #ddd, #888);
-            border-left: 1px solid #555;
-            border-right: 1px solid #555;
-            clip-path: polygon(0 10%, 100% 0, 100% 100%, 0 90%);
-            box-shadow: -2px 0 5px rgba(0,0,0,0.5);
+            justify-content: center;
+            background: #111;
+            border-radius: 4px;
+            border: 1px solid #444;
+            box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.5);
         }
 
         .switch-plunger {
-            width: 20px;
-            height: 20px;
-            background: linear-gradient(to bottom, #d00, #f00, #900);
-            border-radius: 0 3px 3px 0;
-            border-right: 1px solid #500;
-            box-shadow: inset 0 2px 5px rgba(255,255,255,0.4);
+            width: 12px;
+            height: 24px;
+            background: #cc0000;
+            /* Standard red switch */
+            border-radius: 2px;
+            box-shadow: inset 1px 1px 2px rgba(255, 255, 255, 0.3);
             position: relative;
-            left: -2px;
-            transition: transform 0.05s cubic-bezier(0.1, 0.9, 0.2, 1);
             cursor: pointer;
+            transition: transform 0.05s;
         }
 
-        .switch-assembly:active .switch-plunger,
         .switch-assembly.pressed .switch-plunger {
-            transform: translateX(-6px);
+            transform: scale(0.9);
+            background: #aa0000;
         }
 
         .switch-hitbox {
             position: absolute;
-            top: -40px;
-            bottom: -40px;
-            left: -40px;
-            right: -40px;
+            top: -30px;
+            bottom: -30px;
+            left: -30px;
+            right: -30px;
             cursor: pointer;
             z-index: 20;
-            touch-action: none; 
         }
 
-        /* --- DYMO LABELS --- */
+        /* --- PRINTED LABELS (NOT DYMO) --- */
         .dymo-label {
-            background-color: #000; 
-            color: #eee;
-            font-family: sans-serif;
-            font-weight: 900;
-            font-size: 0.65rem;
-            padding: 2px 6px;
-            border-radius: 2px;
-            box-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+            background: transparent;
+            color: var(--text-label);
+            font-family: 'Helvetica', 'Arial', sans-serif;
+            /* Standard silk-screen print */
+            font-weight: bold;
+            font-size: 0.7rem;
+            padding: 0;
+            border: none;
+            box-shadow: none;
             text-transform: uppercase;
-            letter-spacing: 1px;
+            letter-spacing: 0.5px;
             display: inline-block;
-            border: 1px solid #444;
-            text-shadow: 0 0 1px white;
+            text-shadow: none;
             width: 100%;
             text-align: center;
+            opacity: 0.8;
+            margin-bottom: 2px;
         }
-        
-        .dymo-red { background-color: #800; border-color: #a00; }
 
-        /* --- DIGITAL DISPLAY --- */
-        @import url('https://fonts.googleapis.com/css2?family=Black+Ops+One&display=swap');
-        
+        /* --- 7-SEGMENT DISPLAY COMPONENTS --- */
         .lcd-module {
-            background: #9ea792; 
-            border: 4px solid #333;
-            width: 8rem;
-            height: 3rem; 
-            padding: 0 8px;
-            font-family: 'Black Ops One', cursive;
-            color: #222;
-            text-shadow: 1px 1px 0 rgba(0,0,0,0.1);
-            box-shadow: 2px 2px 5px rgba(0,0,0,0.4), inset 0 0 10px rgba(0,0,0,0.1);
-            border-radius: 2px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-bottom: 4px;
-            letter-spacing: 1px;
-        }
-
-        /* --- CONTROL BUTTONS (Side Bar) --- */
-        .control-btn {
-            background: #111;
-            border: 2px solid #444;
-            color: #888;
+            background: #151515;
+            /* Dark acrylic window */
+            border: 2px solid #555;
+            /* Bezel */
             border-radius: 4px;
-            padding: 4px;
-            width: 100%;
-            height: 2.5rem;
-            font-size: 0.75rem;
-            font-weight: bold;
-            box-shadow: 0 4px 0 #000;
-            transition: all 0.1s;
-            text-transform: uppercase;
-            letter-spacing: 1px;
+            width: 8rem;
+            height: 3rem;
+            padding: 0 4px;
+            font-family: 'Seven Segment', monospace;
+            color: var(--led-on);
+            text-shadow: 0 0 5px rgba(255, 0, 0, 0.5);
+            /* Milder glow */
+            box-shadow: inset 0 0 10px #000;
             display: flex;
             align-items: center;
             justify-content: center;
-        }
-        .control-btn:active {
-            transform: translateY(4px);
-            box-shadow: 0 0 0 #000;
-        }
-        .control-btn-red {
-            border-color: #700;
-            color: #f55;
-            background: #200;
+            margin-bottom: 8px;
+            font-size: 2rem;
+            font-weight: normal;
+            transform: none;
+            /* Remove skew for cheaper look */
         }
 
-        /* --- LAYOUT HELPERS --- */
+        /* Only skew the main title for style */
+
+        /* --- BUTTONS: TACTILE SWITCHES --- */
+        .retro-btn {
+            background: #333;
+            border: 2px solid #555;
+            border-bottom-width: 4px;
+            /* Physical height */
+            color: #ccc;
+            border-radius: 4px;
+            padding: 10px;
+            font-family: 'Helvetica', 'Arial', sans-serif;
+            font-weight: bold;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all 0.05s;
+            box-shadow: 0 5px 10px rgba(0, 0, 0, 0.3);
+            text-align: center;
+        }
+
+        .retro-btn:active {
+            transform: translateY(2px);
+            border-bottom-width: 2px;
+            background: #222;
+            color: #fff;
+        }
+
+        .retro-btn-red {
+            background: #cc0000;
+            border-color: #ff3333 #990000 #990000 #ff3333;
+            color: white;
+        }
+
+        .retro-btn-red:active {
+            background: #aa0000;
+        }
+
+        /* --- PROJECT BOX CASING --- */
+        .device-casing {
+            background-color: var(--box-plastic);
+            /* ABS Plastic Texture */
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.5' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.08'/%3E%3C/svg%3E");
+            border: none;
+            border-radius: 12px;
+            /* Simple physical drop shadow, no glow */
+            box-shadow:
+                0 15px 30px rgba(0, 0, 0, 0.4),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            padding: 2rem;
+            color: #eee;
+            position: relative;
+        }
+
+        /* The Printed Front Panel Sticker */
+        .device-casing::after {
+            content: '';
+            position: absolute;
+            top: 15px;
+            bottom: 15px;
+            left: 15px;
+            right: 15px;
+            border: 2px solid var(--accent-blue);
+            /* Science Fair Accent */
+            border-radius: 8px;
+            pointer-events: none;
+            opacity: 0.5;
+        }
+
+        .text-label {
+            color: var(--text-dim);
+            font-family: 'Helvetica', 'Arial', sans-serif;
+            font-size: 0.7rem;
+            font-weight: bold;
+        }
+
+        /* Tiny buttons */
+        .control-btn {
+            background: #ddd;
+            /* Light grey plastic */
+            border: 1px solid #999;
+            border-bottom: 3px solid #666;
+            color: #222;
+            font-weight: bold;
+            font-size: 0.65rem;
+            padding: 6px 4px;
+            border-radius: 2px;
+            text-transform: uppercase;
+            font-family: 'Helvetica', 'Arial', sans-serif;
+            cursor: pointer;
+        }
+
+        .control-btn:active {
+            border-bottom-width: 1px;
+            transform: translateY(2px);
+            background: #ccc;
+        }
+
+        .control-btn-red {
+            background: #ff3333;
+            border-color: #cc0000;
+            border-bottom-color: #990000;
+            color: white;
+        }
+
+        /* --- HELPERS --- */
         #orientation-warning {
             display: none;
             position: fixed;
@@ -350,36 +408,71 @@
             padding: 2rem;
             color: white;
         }
+
         @media (max-height: 600px) and (orientation: landscape) {
-            #game-ui, #intro-screen { display: none !important; }
-            #orientation-warning { display: flex; }
+
+            #game-ui,
+            #intro-screen {
+                display: none !important;
+            }
+
+            #orientation-warning {
+                display: flex;
+            }
         }
 
         .modal-card {
             background: #333;
             border: 2px solid #666;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.9);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.9);
             color: #eee;
             border-radius: 4px;
         }
-        
+
         .stats-container {
             display: flex;
             flex-direction: column;
             gap: 1.2rem;
             margin-right: 2rem;
             align-items: flex-end;
-            width: 9rem; /* Fixed width for alignment */
+            width: 9rem;
         }
-        
+
         .stat-group {
             display: flex;
             flex-direction: column;
             align-items: center;
             width: 100%;
         }
+
+        /* POWER CONNECTOR */
+        .power-connector {
+            position: absolute;
+            bottom: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 14px;
+            height: 25px;
+            background: #1a1a1a;
+            border-radius: 2px;
+            border: 1px solid #333;
+            box-shadow: 0 5px 10px rgba(0, 0, 0, 0.5);
+            z-index: 1;
+        }
+
+        .power-wire {
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 4px;
+            height: 100vh;
+            background: #111;
+            box-shadow: 1px 0 2px rgba(255, 255, 255, 0.05);
+        }
     </style>
 </head>
+
 <body class="h-screen w-full flex flex-col items-center justify-center relative overflow-hidden">
 
     <!-- Orientation Warning -->
@@ -389,34 +482,54 @@
     </div>
 
     <!-- Intro Screen -->
-    <div id="intro-screen" class="absolute inset-0 z-50 flex flex-col items-center justify-center transition-all duration-500 bg-[#1a1a1a]">
-        <div class="bg-[#333] p-8 border-t border-l border-[#555] border-b-4 border-r-4 border-black shadow-2xl flex flex-col items-center max-w-sm w-full mx-4">
-            <div class="dymo-label dymo-red text-xl mb-6 px-4 py-2">RETRO<span class="text-white">REACT</span></div>
-            <div class="text-4xl font-bold text-[#aaa] mb-2 tracking-tighter" style="text-shadow: -1px -1px 0 #000">RETRO<span class="text-red-600">REACT</span></div>
-            <div class="w-full h-1 bg-black mb-8"></div>
-            <div class="w-full mb-4">
-                <div class="text-xs font-bold text-gray-500 mb-1">CALLSIGN</div>
-                <input type="text" id="player-name" class="w-full bg-black border border-gray-600 p-2 font-mono text-center uppercase text-red-500" placeholder="PLAYER 1" maxlength="12">
+    <div id="intro-screen"
+        class="absolute inset-0 z-50 flex flex-col items-center justify-center transition-all duration-500 bg-transparent">
+        <!-- Backdrop -->
+        <div class="absolute inset-0 bg-black/80 -z-10"></div>
+
+        <!-- Main Device Card -->
+        <div class="device-casing flex flex-col items-center max-w-sm w-full mx-4">
+
+            <div class="text-5xl font-bold mb-6 tracking-tighter text-center"
+                style="color: #ccc; font-family: 'Share Tech Mono', monospace; letter-spacing: -2px; text-shadow: 2px 2px 0 #111;">
+                RETRO<span class="text-[#ff3333]">REACT</span>
             </div>
+
+            <div class="w-full h-1 bg-[#111] border-b border-[#444] mb-8"></div>
+
             <div class="w-full mb-6">
-                <div class="text-xs font-bold text-gray-500 mb-1">MODE</div>
-                <div class="flex gap-2 bg-black p-1 rounded">
-                    <button id="mode-normal" class="flex-1 bg-[#444] text-gray-400 p-2 text-xs font-bold hover:bg-[#555]" onclick="setMode('normal')">NORMAL</button>
-                    <button id="mode-endless" class="flex-1 bg-transparent text-gray-600 p-2 text-xs font-bold hover:bg-[#222]" onclick="setMode('endless')">ENDLESS</button>
+                <div class="text-xs font-bold text-label mb-1 tracking-widest pl-1">ID_CALLSIGN</div>
+                <input type="text" id="player-name"
+                    class="w-full bg-[#151515] border-2 border-[#555] p-3 text-center uppercase text-[#ff3333] text-2xl shadow-inner focus:outline-none focus:border-[#777]"
+                    style="font-family: 'Seven Segment', monospace; letter-spacing: 3px; caret-color: red;"
+                    placeholder="PLAYER 1" maxlength="12">
+            </div>
+
+            <div class="w-full mb-8">
+                <div class="text-xs font-bold text-label mb-1 tracking-widest pl-1">SEQUENCE_MODE</div>
+                <div class="flex gap-4 p-1 rounded">
+                    <button id="mode-normal" class="flex-1 retro-btn text-sm"
+                        onclick="setMode('normal')">NORMAL</button>
+                    <button id="mode-endless" class="flex-1 retro-btn text-sm" style="opacity: 0.5;"
+                        onclick="setMode('endless')">ENDLESS</button>
                 </div>
             </div>
-            <button id="start-btn" class="w-full bg-[#cc3333] text-white font-bold p-4 border-b-4 border-[#990000] active:border-b-0 active:translate-y-1 transition-all shadow-lg">
+
+            <button id="start-btn" class="w-full retro-btn retro-btn-red text-3xl font-bold p-4 tracking-widest mt-2">
                 INITIATE
             </button>
         </div>
-        <button id="leaderboard-btn" class="mt-8 text-gray-600 underline text-xs hover:text-white">
-            Access Logs
+
+        <button id="leaderboard-btn"
+            class="mt-8 text-white text-xs uppercase tracking-widest hover:text-gray-300 transition-colors z-20">
+            // VIEW_LOGS
         </button>
     </div>
 
     <!-- Gameplay UI -->
-    <div id="game-ui" class="relative z-10 w-full max-w-lg h-full flex flex-col items-center justify-center p-4 opacity-0 transition-opacity duration-500 pointer-events-none">
-        
+    <div id="game-ui"
+        class="relative z-10 w-full max-w-lg h-full flex flex-col items-center justify-center p-4 opacity-0 transition-opacity duration-500 pointer-events-none">
+
         <div class="flex flex-row items-center justify-center mt-6">
             <!-- Left Side: Stats & Controls -->
             <div class="stats-container pointer-events-auto">
@@ -426,6 +539,7 @@
                         <span id="level-num">00</span><span id="level-max" class="text-sm opacity-50 ml-1">10</span>
                     </div>
                 </div>
+
                 <div class="stat-group">
                     <div class="dymo-label mb-1">TIMER</div>
                     <div id="timer-display" class="lcd-module text-xl">00:00:00</div>
@@ -437,10 +551,13 @@
 
                 <!-- Controls Cluster -->
                 <div class="w-full pt-4 border-t border-[#444] mt-2 flex flex-col gap-3">
-                    <button id="leaderboard-btn-game" class="control-btn">LOGS</button>
+                    <div class="flex gap-2">
+                        <button id="leaderboard-btn-game" class="control-btn" style="flex:1;">LOGS</button>
+                    </div>
                     <div class="flex gap-2">
                         <button id="sound-btn" class="control-btn" style="flex: 1;">SND: OFF</button>
-                        <button id="restart-game-btn" class="control-btn control-btn-red" style="flex: 1;">STOP</button>
+                        <button id="restart-game-btn" class="control-btn control-btn-red"
+                            style="flex: 1;">ABORT</button>
                     </div>
                 </div>
             </div>
@@ -450,7 +567,6 @@
                 <div class="pipe-body" id="tube-grid">
                     <!-- LEDs injected here -->
                 </div>
-                
                 <!-- Power Cable -->
                 <div class="power-connector">
                     <div class="power-wire"></div>
@@ -464,41 +580,44 @@
                 </div>
             </div>
 
-            <!-- Right Side: Spacer to center the pipe -->
-            <div class="ml-8 w-8"></div> 
-
+            <!-- Right Side: Spacer -->
+            <div class="ml-8 w-8"></div>
         </div>
-
     </div>
 
-    <!-- Wait Indicator (Invisible) -->
-    <div id="wait-indicator" class="hidden"></div>
-
-    <!-- Modals (OVERLAYS) -->
-    <div id="leaderboard-modal" class="hidden fixed inset-0 z-[70] flex items-center justify-center p-6 bg-black/80 backdrop-blur-sm pointer-events-auto">
+    <!-- Leaderboard Modal -->
+    <div id="leaderboard-modal"
+        class="hidden fixed inset-0 z-[70] flex items-center justify-center p-6 bg-black/80 backdrop-blur-sm pointer-events-auto">
         <div class="modal-card w-full max-w-md p-6 flex flex-col max-h-[80vh]">
             <div class="flex justify-between items-center mb-4 border-b border-gray-600 pb-2">
                 <div class="dymo-label">LOGBOOK</div>
                 <button id="close-leaderboard" class="font-bold text-red-500">X</button>
             </div>
-            <div id="leaderboard-list" class="space-y-2 text-sm overflow-y-auto flex-1 font-mono bg-black text-green-500 border border-gray-600 p-4 shadow-inner h-64"></div>
+            <div id="leaderboard-list"
+                class="space-y-2 text-sm overflow-y-auto flex-1 font-mono bg-black text-green-500 border border-gray-600 p-4 shadow-inner h-64">
+            </div>
         </div>
     </div>
 
     <!-- Result Overlay -->
-    <div id="result-modal" class="hidden absolute inset-0 z-[60] flex flex-col items-center justify-center p-6 bg-black/60 backdrop-blur-md pointer-events-auto transition-opacity duration-300">
-        <div class="bg-[#333] p-6 border-4 border-[#111] shadow-2xl flex flex-col items-center w-full max-w-xs rotate-1 ring-4 ring-black/50">
+    <div id="result-modal"
+        class="hidden absolute inset-0 z-[60] flex flex-col items-center justify-center p-6 bg-black/60 backdrop-blur-md pointer-events-auto transition-opacity duration-300">
+        <div
+            class="bg-[#333] p-6 border-4 border-[#111] shadow-2xl flex flex-col items-center w-full max-w-xs rotate-1 ring-4 ring-black/50">
             <h2 id="result-title" class="text-4xl font-black text-white mb-2 tracking-widest uppercase">DONE</h2>
-            <div id="result-subtitle" class="dymo-label mb-6 bg-black text-gray-400 border-none shadow-none">SEQUENCE ENDED</div>
+            <div id="result-subtitle" class="dymo-label mb-6 bg-black text-gray-400 border-none shadow-none">SEQUENCE
+                ENDED</div>
             <div class="w-full mb-1 text-xs text-gray-400 font-bold ml-1">FINAL STATS</div>
-            <div class="bg-[#9ea792] border-4 border-[#222] p-3 w-full mb-4 font-mono text-center text-3xl text-[#222] shadow-inner rounded tracking-widest font-black">
+            <div
+                class="bg-[#9ea792] border-4 border-[#222] p-3 w-full mb-4 font-mono text-center text-3xl text-[#222] shadow-inner rounded tracking-widest font-black">
                 <div id="final-time">00:00:00</div>
             </div>
             <div class="flex justify-between w-full px-2 text-xs font-bold text-gray-500 mb-6">
                 <span>ERRORS</span>
                 <span id="mistake-count" class="text-red-500 text-lg">0</span>
             </div>
-            <button id="restart-btn" class="w-full bg-[#cc3333] text-white font-bold p-3 border-b-4 border-[#990000] active:border-b-0 active:translate-y-1 transition-all shadow-lg uppercase tracking-widest">
+            <button id="restart-btn"
+                class="w-full bg-[#cc3333] text-white font-bold p-3 border-b-4 border-[#990000] active:border-b-0 active:translate-y-1 transition-all shadow-lg uppercase tracking-widest">
                 RESET SYSTEM
             </button>
         </div>
@@ -506,9 +625,9 @@
 
     <script>
         /* --- CONFIG --- */
-        const LEVELS = 10; 
+        const LEVELS = 10;
         const COLORS = Array(12).fill('#ff1a1a');
-        
+
         /* --- STATE --- */
         const state = {
             gameMode: 'normal',
@@ -521,7 +640,7 @@
             startTime: 0,
             mistakes: 0,
             bestTime: null,
-            muted: true, // Defaulting sound to OFF as requested
+            muted: true,
             playerName: "",
             inputLocked: false
         };
@@ -556,8 +675,8 @@
                 this.master.connect(this.ctx.destination);
             }
             playClick() {
-                // Short, sharp high pitch "tick" (Piezo style)
-                if (state.muted || this.ctx.state === 'suspended') { if(!state.muted) this.ctx.resume(); return; }
+                // Short, sharp high pitch "tick"
+                if (state.muted || this.ctx.state === 'suspended') { if (!state.muted) this.ctx.resume(); return; }
                 const osc = this.ctx.createOscillator();
                 const gain = this.ctx.createGain();
                 osc.type = 'square';
@@ -573,32 +692,32 @@
                 osc.stop(now + 0.03);
             }
             playHit() {
-                // Success: 555 Timer two-tone climb
-                if (state.muted || this.ctx.state === 'suspended') { if(!state.muted) this.ctx.resume(); return; }
+                // Success: Fixed high-pitch piezo beep (authentic 80s kit)
+                if (state.muted || this.ctx.state === 'suspended') { if (!state.muted) this.ctx.resume(); return; }
                 const now = this.ctx.currentTime;
                 const osc = this.ctx.createOscillator();
                 const gain = this.ctx.createGain();
-                osc.type = 'square'; 
-                // Two tones
-                osc.frequency.setValueAtTime(440 + (state.level * 50), now);
-                osc.frequency.setValueAtTime(880 + (state.level * 100), now + 0.05);
-                
+                osc.type = 'square';
+
+                // Fixed frequency (880Hz)
+                osc.frequency.setValueAtTime(880, now);
+
                 gain.gain.setValueAtTime(0.1, now);
-                gain.gain.linearRampToValueAtTime(0.1, now + 0.1);
-                gain.gain.linearRampToValueAtTime(0, now + 0.15);
+                gain.gain.linearRampToValueAtTime(0.1, now + 0.08);
+                gain.gain.linearRampToValueAtTime(0, now + 0.1);
+
                 osc.connect(gain);
                 gain.connect(this.master);
                 osc.start();
-                osc.stop(now + 0.15);
+                osc.stop(now + 0.1);
             }
             playFail() {
-                // Fail: Low flat buzzer
-                if (state.muted || this.ctx.state === 'suspended') { if(!state.muted) this.ctx.resume(); return; }
+                if (state.muted || this.ctx.state === 'suspended') { if (!state.muted) this.ctx.resume(); return; }
                 const now = this.ctx.currentTime;
                 const osc = this.ctx.createOscillator();
                 const gain = this.ctx.createGain();
-                osc.type = 'square'; // Buzzier than sawtooth
-                osc.frequency.setValueAtTime(150, now); // Low buzz
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(150, now);
                 gain.gain.setValueAtTime(0.3, now);
                 gain.gain.linearRampToValueAtTime(0, now + 0.4);
                 osc.connect(gain);
@@ -607,115 +726,95 @@
                 osc.stop(now + 0.4);
             }
             playWin() {
-                if (state.muted || this.ctx.state === 'suspended') { if(!state.muted) this.ctx.resume(); return; }
-                // Arpeggio
+                if (state.muted || this.ctx.state === 'suspended') { if (!state.muted) this.ctx.resume(); return; }
                 [523, 659, 783, 1046].forEach((f, i) => {
                     setTimeout(() => {
                         const now = this.ctx.currentTime;
                         const osc = this.ctx.createOscillator();
                         const gain = this.ctx.createGain();
                         osc.type = 'square';
-                        osc.frequency.value = f;
+                        osc.frequency.setValueAtTime(f, now);
                         gain.gain.setValueAtTime(0.1, now);
-                        gain.gain.linearRampToValueAtTime(0, now + 0.1);
+                        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
                         osc.connect(gain);
                         gain.connect(this.master);
                         osc.start();
                         osc.stop(now + 0.1);
-                    }, i * 100);
+                    }, i * 120);
                 });
             }
         }
-        
+
         let audio;
 
-        /* --- GAME ENGINE --- */
-        function setMode(mode) {
-            state.gameMode = mode;
-            document.getElementById('mode-normal').style.backgroundColor = mode === 'normal' ? '#444' : 'transparent';
-            document.getElementById('mode-normal').style.color = mode === 'normal' ? '#ccc' : '#666';
-            document.getElementById('mode-endless').style.backgroundColor = mode === 'endless' ? '#444' : 'transparent';
-            document.getElementById('mode-endless').style.color = mode === 'endless' ? '#ccc' : '#666';
-        }
-
+        /* --- GAME LOGIC --- */
         function init() {
             loadData();
             if (!state.playerName) state.playerName = generateCallsign();
-            ui.nameInput.value = state.playerName; 
+            ui.nameInput.value = state.playerName;
+
+            ui.intro.style.display = 'flex';
+            ui.game.style.opacity = '0';
+            ui.game.style.pointerEvents = 'none';
             ui.soundBtn.innerText = state.muted ? 'SND: OFF' : 'SND: ON';
-            
-            ui.tube.innerHTML = '';
-            const slots = state.gameMode === 'normal' ? LEVELS : 10;
-            for (let i = 0; i < slots; i++) {
-                const slot = document.createElement('div');
-                slot.className = 'led-slot';
-                slot.id = `slot-${i}`;
-                const inner = document.createElement('div');
-                inner.className = 'led-bulb'; 
-                slot.appendChild(inner);
-                ui.tube.appendChild(slot);
-            }
+            renderGrid();
+        }
+
+        function setMode(mode) {
+            state.gameMode = mode;
+            document.getElementById('mode-normal').style.opacity = mode === 'normal' ? '1' : '0.5';
+            document.getElementById('mode-endless').style.opacity = mode === 'endless' ? '1' : '0.5';
         }
 
         function startGame() {
             if (!audio) audio = new AudioEngine();
-            const rawName = ui.nameInput.value;
-            const safeName = validateAndSanitizeName(rawName);
-            state.playerName = safeName;
-            ui.nameInput.value = safeName;
+            const name = ui.nameInput.value.trim() || "PLAYER 1";
+            state.playerName = validateAndSanitizeName(name);
             saveData();
-
-            ui.intro.style.opacity = '0';
-            ui.resultModal.style.display = 'none';
-            ui.leaderboardModal.style.display = 'none';
-            
-            setTimeout(() => {
-                ui.intro.style.display = 'none';
-                ui.game.style.opacity = '1';
-                ui.game.style.pointerEvents = 'auto';
-            }, 500);
-
-            state.playing = false;
-            clearTimeout(state.timerId);
-            cancelAnimationFrame(state.stopwatchId);
 
             state.playing = true;
             state.level = 0;
             state.mistakes = 0;
             state.hasStartedAscent = false;
+            state.lightOn = false;
             state.inputLocked = false;
+
+            ui.intro.style.display = 'none';
+            ui.resultModal.style.display = 'none';
+
+            ui.game.style.display = 'flex';
+            setTimeout(() => {
+                ui.game.style.opacity = '1';
+                ui.game.style.pointerEvents = 'auto';
+            }, 100);
+
+            ui.mistakeCount.innerText = "0";
             ui.timer.innerText = "00:00:00";
-            
-            if (state.gameMode === 'endless') ui.levelMax.innerText = "";
-            else ui.levelMax.innerText = "10";
-            
-            startLevel();
+
+            setTimeout(startLevel, 1000);
         }
 
         function getWeightedRandomDelay() {
-            // PROBABILITY BUCKETS FOR GAP TIME (Start of Level)
             const roll = Math.random();
-            if (roll < 0.15) return 50;                  // 15% INSTANT (0.05s)
-            if (roll < 0.50) return 200 + Math.random() * 200; // 35% FAST (0.2s - 0.4s)
-            if (roll < 0.80) return 500 + Math.random() * 500; // 30% HESITATION (0.5s - 1.0s)
-            if (roll < 0.95) return 1500 + Math.random() * 1000; // 15% LONG WAIT (1.5s - 2.5s)
-            return 2500 + Math.random() * 1000;          // 5% BROKEN (2.5s - 3.5s)
+            if (roll < 0.15) return 50;
+            if (roll < 0.50) return 200 + Math.random() * 200;
+            if (roll < 0.80) return 500 + Math.random() * 500;
+            if (roll < 0.95) return 1500 + Math.random() * 1000;
+            return 2500 + Math.random() * 1000;
         }
 
         function startLevel() {
             clearTimeout(state.timerId);
             state.lightOn = false;
             state.inputLocked = false;
-            
+
             const displayLevel = state.level + 1;
             ui.level.innerText = displayLevel.toString().padStart(2, '0');
-            
+
             renderGrid();
 
-            // LEVEL 0: Standard short wait to start
-            // LEVEL 1+: Chaos Math applied to the gap
             const delay = state.level === 0 ? 500 : getWeightedRandomDelay();
-            
+
             state.timerId = setTimeout(() => {
                 runCycle();
             }, delay);
@@ -727,10 +826,8 @@
             // --- INACTION CHECK ---
             if (state.lightOn) {
                 if (!state.hasStartedAscent) {
-                    // Safe mode (Lvl 0): Just loop
                     state.lightOn = false;
                     renderVisuals();
-                    // Level 0 Loop (Standard Metronome)
                     state.timerId = setTimeout(runCycle, 600);
                     return;
                 } else {
@@ -747,24 +844,12 @@
             let duration = 600;
 
             if (state.level === 0) {
-                duration = 600; // Metronome
+                duration = 600;
             } else {
                 if (state.lightOn) {
-                    // ON Duration: Reaction Window
-                    // Starts at 500ms, drops to 150ms
                     duration = Math.max(150, 500 - (state.level * 30));
-                    // Minor jitter
-                    duration = duration * (0.9 + Math.random() * 0.2); 
+                    duration = duration * (0.9 + Math.random() * 0.2);
                 } else {
-                    // OFF Duration: CHAOS BUCKETS
-                    // This is the wait time before the NEXT flash (if we miss it or loop)
-                    // Note: This logic runs if the light turns OFF naturally (missed)
-                    // But in a game loop, usually we click while it's ON.
-                    // This part mainly affects the flicker/stutter patterns if we miss level 0
-                    // or if we implement complex patterns where light flickers mid-level.
-                    // For now, simpler is better for "Reflex" game.
-                    
-                    // We stick to the standard gap logic for the loop
                     const roll = Math.random();
                     if (roll < 0.20) duration = 50 + Math.random() * 100;
                     else if (roll < 0.60) duration = 150 + Math.random() * 250;
@@ -782,27 +867,31 @@
 
         function renderGrid() {
             const slots = state.gameMode === 'normal' ? LEVELS : 10;
-            
-            for(let i=0; i<slots; i++) {
-                const s = document.getElementById(`slot-${i}`);
+            ui.tube.innerHTML = '';
+
+            for (let i = 0; i < slots; i++) {
+                const div = document.createElement('div');
+                div.className = 'led-slot';
+                div.id = `slot-${i}`;
+
+                const bulb = document.createElement('div');
+                bulb.className = 'led-bulb';
+                div.appendChild(bulb);
+
                 const levelInSet = state.level % slots;
                 if (i < levelInSet) {
-                    s.classList.add('completed');
-                    s.classList.remove('active');
+                    div.classList.add('completed');
                 } else if (i === levelInSet) {
-                    s.classList.remove('completed');
-                    if (state.lightOn) s.classList.add('active');
-                    else s.classList.remove('active');
-                } else {
-                    s.classList.remove('completed');
-                    s.classList.remove('active');
+                    if (state.lightOn) div.classList.add('active');
                 }
+
+                ui.tube.appendChild(div);
             }
         }
 
         function handleInput() {
             if (!state.playing) return;
-            if (state.inputLocked) return; 
+            if (state.inputLocked) return;
 
             ui.switchMech.classList.add('pressed');
             setTimeout(() => ui.switchMech.classList.remove('pressed'), 100);
@@ -818,12 +907,12 @@
                 state.level++;
 
                 if (state.gameMode === 'normal' && state.level >= LEVELS) winGame();
-                else startLevel(); // Applies Random Delay here
+                else startLevel();
             } else {
                 // FAIL
                 if (!state.hasStartedAscent) {
-                    audio.playFail(); 
-                    return; 
+                    audio.playFail();
+                    return;
                 }
                 handleFail();
             }
@@ -831,16 +920,15 @@
 
         function handleFail() {
             if (!state.playing) return;
-            
+
             state.inputLocked = true;
-            
+
             if (navigator.vibrate) navigator.vibrate(100);
             audio.playFail();
             state.mistakes++;
-            
+
             if (state.level > 0) state.level--;
-            
-            // GAME OVER Check
+
             if (state.level === 0 && state.hasStartedAscent) {
                 renderGrid();
                 setTimeout(() => { gameOver(); }, 300);
@@ -849,9 +937,9 @@
 
             renderGrid();
             clearTimeout(state.timerId);
-            state.lightOn = false; 
+            state.lightOn = false;
             renderVisuals();
-            
+
             setTimeout(startLevel, 500);
         }
 
@@ -874,16 +962,16 @@
             cancelAnimationFrame(state.stopwatchId);
             clearTimeout(state.timerId);
             const finalTime = Date.now() - state.startTime;
-            
-            if(isWin) audio.playWin();
+
+            if (isWin) audio.playWin();
             else audio.playFail();
 
-            if(isWin && (!state.bestTime || finalTime < state.bestTime)) {
+            if (isWin && (!state.bestTime || finalTime < state.bestTime)) {
                 state.bestTime = finalTime;
                 saveData();
                 ui.bestTime.innerText = `PB: ${formatTime(finalTime)}`;
             }
-            
+
             if (window.submitScoreToCloud) {
                 window.submitScoreToCloud(state.playerName, state.level, finalTime, state.gameMode);
             }
@@ -892,36 +980,38 @@
             document.getElementById('result-subtitle').innerText = subtitle;
             ui.finalTime.innerText = formatTime(finalTime);
             ui.mistakeCount.innerText = state.mistakes;
-            
+
             ui.resultModal.style.display = 'flex';
             ui.resultModal.style.pointerEvents = 'auto';
         }
 
-        function saveData() { 
-            if(state.bestTime) localStorage.setItem('reflex_best_time', state.bestTime); 
+        function saveData() {
+            if (state.bestTime) localStorage.setItem('reflex_best_time', state.bestTime);
             localStorage.setItem('reflex_muted', state.muted);
             localStorage.setItem('reflex_player_name', state.playerName);
         }
         function loadData() {
             const t = localStorage.getItem('reflex_best_time');
-            if(t) { state.bestTime = parseInt(t); ui.bestTime.innerText = `PB: ${formatTime(state.bestTime)}`; }
+            if (t) { state.bestTime = parseInt(t); ui.bestTime.innerText = `PB: ${formatTime(state.bestTime)}`; }
             const m = localStorage.getItem('reflex_muted');
-            if(m === 'true') { state.muted = true; applyMute(); }
+            if (m === 'true') { state.muted = true; applyMute(); }
             const n = localStorage.getItem('reflex_player_name');
-            if(n) { state.playerName = n; }
+            if (n) { state.playerName = n; }
         }
         function toggleSound() { state.muted = !state.muted; applyMute(); saveData(); }
         function applyMute() {
             ui.soundBtn.innerText = state.muted ? 'SND: OFF' : 'SND: ON';
         }
-        
+
         async function displayGlobalLeaderboard() {
             ui.leaderboardModal.style.display = 'flex';
             ui.leaderboardList.innerHTML = '<div class="text-center p-4">LOADING DATA...</div>';
-            
-            const scores = await window.fetchGlobalLeaderboard(state.gameMode);
-            const myId = window.getCurrentUserId();
-            
+
+            let scores = [];
+            if (window.fetchGlobalLeaderboard) scores = await window.fetchGlobalLeaderboard(state.gameMode);
+
+            const myId = window.getCurrentUserId ? window.getCurrentUserId() : "me";
+
             if (scores.length === 0) {
                 ui.leaderboardList.innerHTML = '<div class="text-center p-4">NO RECORDS</div>';
                 return;
@@ -944,40 +1034,43 @@
             ui.leaderboardList.innerHTML = html;
         }
 
-        function generateCallsign() {
-            return `UNIT-${Math.floor(Math.random() * 9000) + 1000}`;
-        }
+        function generateCallsign() { return `UNIT-${Math.floor(Math.random() * 9000) + 1000}`; }
 
         function validateAndSanitizeName(name) {
             let clean = name.toUpperCase().replace(/[^A-Z0-9-]/g, '');
             if (clean.length < 3 || clean.length > 12) return generateCallsign();
-            const BAD_WORDS = ["BS", "CRAP", "DAMN", "HELL", "SUCK", "WTF", "XXX", "SEX", "DICK", "COCK", "PUSSY", "FUCK", "SHIT", "ASS", "CUNT", "BITCH", "NIGGA", "NIGGER", "FAG", "DYKE"]; 
-            for(let word of BAD_WORDS) if(clean.includes(word)) return generateCallsign();
+            const BAD_WORDS = ["BS", "CRAP", "DAMN", "HELL", "SUCK", "WTF", "XXX", "SEX", "DICK", "COCK", "PUSSY", "FUCK", "SHIT", "ASS", "CUNT", "BITCH", "NIGGA", "NIGGER", "FAG", "DYKE"];
+            for (let word of BAD_WORDS) if (clean.includes(word)) return generateCallsign();
             return clean;
         }
 
         ui.leaderboardBtn.addEventListener('click', displayGlobalLeaderboard);
         ui.leaderboardBtnGame.addEventListener('click', displayGlobalLeaderboard);
-        document.getElementById('close-leaderboard').addEventListener('click', ()=>{ui.leaderboardModal.style.display='none'});
+        ui.soundBtn.addEventListener('click', toggleSound);
+        document.getElementById('close-leaderboard').addEventListener('click', () => { ui.leaderboardModal.style.display = 'none' });
         document.getElementById('start-btn').addEventListener('click', startGame);
         document.getElementById('restart-btn').addEventListener('click', startGame);
         ui.restartGameBtn.addEventListener('click', startGame);
-        
+
         const btn = document.getElementById('trigger-btn');
         btn.addEventListener('pointerdown', (e) => {
-            e.preventDefault(); 
+            e.preventDefault();
             handleInput();
         });
-        
+
         window.addEventListener('keydown', (e) => {
-            if(e.code==='Space'||e.code==='Enter') {
-                if(ui.intro.style.display!=='none') startGame();
-                else if(ui.resultModal.style.display==='flex') startGame();
-                else if(ui.leaderboardModal.style.display==='flex') ui.leaderboardModal.style.display='none';
+            if (e.code === 'Space' || e.code === 'Enter') {
+                if (ui.intro.style.display !== 'none') startGame();
+                else if (ui.resultModal.style.display === 'flex') startGame();
+                else if (ui.leaderboardModal.style.display === 'flex') ui.leaderboardModal.style.display = 'none';
                 else { handleInput(); }
             }
         });
+
+        // Initial Grid
+        renderGrid();
         init();
     </script>
 </body>
+
 </html>
