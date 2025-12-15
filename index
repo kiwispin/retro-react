@@ -1,0 +1,983 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>RetroReact: Hobbyist</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    
+    <!-- Firebase SDKs -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const firebaseConfig = JSON.parse(__firebase_config);
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        
+        let currentUser = null;
+
+        const initAuth = async () => {
+            try {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+            } catch (error) {
+                console.error("Auth Error:", error);
+            }
+        };
+        initAuth();
+
+        onAuthStateChanged(auth, (user) => {
+            currentUser = user;
+        });
+
+        window.submitScoreToCloud = async (name, score, time, mode) => {
+            if (!currentUser) return;
+            try {
+                const scoresRef = collection(db, 'artifacts', appId, 'public', 'data', 'leaderboard');
+                await addDoc(scoresRef, {
+                    name: name || "UNKNOWN",
+                    score: score,
+                    time: time,
+                    mode: mode,
+                    timestamp: Date.now(),
+                    userId: currentUser.uid 
+                });
+            } catch (e) { console.error(e); }
+        };
+
+        window.fetchGlobalLeaderboard = async (currentMode) => {
+            if (!currentUser) return [];
+            try {
+                const scoresRef = collection(db, 'artifacts', appId, 'public', 'data', 'leaderboard');
+                const snapshot = await getDocs(scoresRef);
+                let scores = [];
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    if (data.mode === currentMode) scores.push({ ...data, id: doc.id });
+                });
+                scores.sort((a, b) => {
+                    if (b.score !== a.score) return b.score - a.score;
+                    return a.time - b.time;
+                });
+                return scores.slice(0, 10); 
+            } catch (e) { return []; }
+        };
+        
+        window.getCurrentUserId = () => currentUser ? currentUser.uid : null;
+    </script>
+
+    <style>
+        :root {
+            --bg-mat: #2a2a2a; 
+            --pipe-grey: #888;
+            --led-off: #4a0404; 
+            --led-on: #ff1a1a; 
+            --led-dim: #600;
+        }
+
+        body {
+            font-family: 'Share Tech Mono', monospace;
+            background-color: var(--bg-mat);
+            background-image: 
+                linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+            background-size: 20px 20px;
+            color: #ccc;
+            overflow: hidden;
+            touch-action: none; 
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        /* --- THE PIPE --- */
+        .pipe-assembly {
+            position: relative;
+            width: 160px; 
+            height: 75vh;
+            display: flex;
+            flex-direction: column;
+            filter: drop-shadow(15px 15px 30px rgba(0,0,0,0.8));
+        }
+
+        .pipe-body {
+            flex: 1;
+            /* Industrial Grey PVC look */
+            background: linear-gradient(90deg, #555 0%, #999 20%, #bbb 45%, #888 60%, #444 100%);
+            position: relative;
+            display: flex;
+            flex-direction: column-reverse;
+            justify-content: space-evenly; 
+            padding: 30px 0; 
+            box-shadow: inset 0 0 40px rgba(0,0,0,0.6);
+            border-radius: 4px;
+            border-top: 4px solid #777;
+            border-bottom: 4px solid #444;
+            z-index: 2; /* Sit above cable */
+        }
+        
+        .pipe-body::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 10%; right: 10%; height: 10px;
+            background: radial-gradient(ellipse at center, #222 0%, transparent 70%);
+            opacity: 0.5;
+        }
+        .pipe-body::after {
+            content: '';
+            position: absolute;
+            bottom: 0; left: 10%; right: 10%; height: 10px;
+            background: radial-gradient(ellipse at center, #222 0%, transparent 70%);
+            opacity: 0.5;
+        }
+
+        /* --- POWER CABLE --- */
+        .power-connector {
+            position: absolute;
+            bottom: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 14px;
+            height: 25px;
+            background: #1a1a1a;
+            border-radius: 2px;
+            border: 1px solid #333;
+            box-shadow: 0 5px 10px rgba(0,0,0,0.5);
+            z-index: 1;
+        }
+        
+        .power-wire {
+            position: absolute;
+            top: 100%; /* Starts at bottom of connector */
+            left: 50%;
+            transform: translateX(-50%);
+            width: 4px; /* Thin small cable */
+            height: 100vh; /* Goes off screen */
+            background: #111;
+            box-shadow: 1px 0 2px rgba(255,255,255,0.05); /* Highlight */
+        }
+
+        /* --- VERTICAL LED COMPONENTS --- */
+        .led-slot {
+            width: 20px; 
+            height: 6%; 
+            margin: 0 auto; 
+            background: #000; 
+            box-shadow: inset 1px 1px 3px rgba(0,0,0,1), 1px 1px 0 rgba(255,255,255,0.2); 
+            padding: 0;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .led-bulb {
+            width: 100%;
+            height: 100%;
+            background-color: var(--led-off);
+            border-radius: 1px;
+            border-top: 1px solid rgba(255,255,255,0.2);
+            border-left: 1px solid rgba(255,255,255,0.1);
+            border-right: 1px solid rgba(0,0,0,0.5);
+            border-bottom: 1px solid rgba(0,0,0,0.5);
+            /* NO TRANSITION - INSTANT ON/OFF for realistic LED physics */
+            transition: none; 
+            position: relative;
+            transform: translateZ(2px);
+            box-shadow: 1px 1px 3px rgba(0,0,0,0.6);
+        }
+        
+        .led-bulb::after {
+            content: '';
+            position: absolute;
+            top: 2px; left: 2px; right: 2px; height: 30%;
+            background: linear-gradient(to bottom, rgba(255,255,255,0.2), transparent);
+            border-radius: 1px;
+        }
+
+        .led-slot.active .led-bulb {
+            background-color: var(--led-on);
+            box-shadow: 0 0 15px #ff0000, 0 0 30px #ff0000; 
+            border-color: #ff5555; 
+            z-index: 10;
+        }
+
+        .led-slot.completed .led-bulb {
+            background-color: var(--led-dim); 
+            box-shadow: 0 0 5px rgba(255, 0, 0, 0.3);
+            border-color: #800;
+        }
+
+        /* --- THE SIDE SWITCH --- */
+        .switch-assembly {
+            position: absolute;
+            bottom: 12%; 
+            right: -32px; 
+            width: 40px;
+            height: 40px;
+            z-index: 5;
+            display: flex;
+            align-items: center;
+        }
+
+        .switch-housing {
+            width: 15px;
+            height: 30px;
+            background: linear-gradient(to bottom, #888, #ddd, #888);
+            border-left: 1px solid #555;
+            border-right: 1px solid #555;
+            clip-path: polygon(0 10%, 100% 0, 100% 100%, 0 90%);
+            box-shadow: -2px 0 5px rgba(0,0,0,0.5);
+        }
+
+        .switch-plunger {
+            width: 20px;
+            height: 20px;
+            background: linear-gradient(to bottom, #d00, #f00, #900);
+            border-radius: 0 3px 3px 0;
+            border-right: 1px solid #500;
+            box-shadow: inset 0 2px 5px rgba(255,255,255,0.4);
+            position: relative;
+            left: -2px;
+            transition: transform 0.05s cubic-bezier(0.1, 0.9, 0.2, 1);
+            cursor: pointer;
+        }
+
+        .switch-assembly:active .switch-plunger,
+        .switch-assembly.pressed .switch-plunger {
+            transform: translateX(-6px);
+        }
+
+        .switch-hitbox {
+            position: absolute;
+            top: -40px;
+            bottom: -40px;
+            left: -40px;
+            right: -40px;
+            cursor: pointer;
+            z-index: 20;
+            touch-action: none; 
+        }
+
+        /* --- DYMO LABELS --- */
+        .dymo-label {
+            background-color: #000; 
+            color: #eee;
+            font-family: sans-serif;
+            font-weight: 900;
+            font-size: 0.65rem;
+            padding: 2px 6px;
+            border-radius: 2px;
+            box-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            display: inline-block;
+            border: 1px solid #444;
+            text-shadow: 0 0 1px white;
+            width: 100%;
+            text-align: center;
+        }
+        
+        .dymo-red { background-color: #800; border-color: #a00; }
+
+        /* --- DIGITAL DISPLAY --- */
+        @import url('https://fonts.googleapis.com/css2?family=Black+Ops+One&display=swap');
+        
+        .lcd-module {
+            background: #9ea792; 
+            border: 4px solid #333;
+            width: 8rem;
+            height: 3rem; 
+            padding: 0 8px;
+            font-family: 'Black Ops One', cursive;
+            color: #222;
+            text-shadow: 1px 1px 0 rgba(0,0,0,0.1);
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.4), inset 0 0 10px rgba(0,0,0,0.1);
+            border-radius: 2px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 4px;
+            letter-spacing: 1px;
+        }
+
+        /* --- CONTROL BUTTONS (Side Bar) --- */
+        .control-btn {
+            background: #111;
+            border: 2px solid #444;
+            color: #888;
+            border-radius: 4px;
+            padding: 4px;
+            width: 100%;
+            height: 2.5rem;
+            font-size: 0.75rem;
+            font-weight: bold;
+            box-shadow: 0 4px 0 #000;
+            transition: all 0.1s;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .control-btn:active {
+            transform: translateY(4px);
+            box-shadow: 0 0 0 #000;
+        }
+        .control-btn-red {
+            border-color: #700;
+            color: #f55;
+            background: #200;
+        }
+
+        /* --- LAYOUT HELPERS --- */
+        #orientation-warning {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: #222;
+            z-index: 100;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 2rem;
+            color: white;
+        }
+        @media (max-height: 600px) and (orientation: landscape) {
+            #game-ui, #intro-screen { display: none !important; }
+            #orientation-warning { display: flex; }
+        }
+
+        .modal-card {
+            background: #333;
+            border: 2px solid #666;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.9);
+            color: #eee;
+            border-radius: 4px;
+        }
+        
+        .stats-container {
+            display: flex;
+            flex-direction: column;
+            gap: 1.2rem;
+            margin-right: 2rem;
+            align-items: flex-end;
+            width: 9rem; /* Fixed width for alignment */
+        }
+        
+        .stat-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+        }
+    </style>
+</head>
+<body class="h-screen w-full flex flex-col items-center justify-center relative overflow-hidden">
+
+    <!-- Orientation Warning -->
+    <div id="orientation-warning">
+        <h2 class="text-xl font-bold mb-2">ROTATE DEVICE</h2>
+        <p>Vertical alignment required</p>
+    </div>
+
+    <!-- Intro Screen -->
+    <div id="intro-screen" class="absolute inset-0 z-50 flex flex-col items-center justify-center transition-all duration-500 bg-[#1a1a1a]">
+        <div class="bg-[#333] p-8 border-t border-l border-[#555] border-b-4 border-r-4 border-black shadow-2xl flex flex-col items-center max-w-sm w-full mx-4">
+            <div class="dymo-label dymo-red text-xl mb-6 px-4 py-2">RETRO<span class="text-white">REACT</span></div>
+            <div class="text-4xl font-bold text-[#aaa] mb-2 tracking-tighter" style="text-shadow: -1px -1px 0 #000">RETRO<span class="text-red-600">REACT</span></div>
+            <div class="w-full h-1 bg-black mb-8"></div>
+            <div class="w-full mb-4">
+                <div class="text-xs font-bold text-gray-500 mb-1">CALLSIGN</div>
+                <input type="text" id="player-name" class="w-full bg-black border border-gray-600 p-2 font-mono text-center uppercase text-red-500" placeholder="PLAYER 1" maxlength="12">
+            </div>
+            <div class="w-full mb-6">
+                <div class="text-xs font-bold text-gray-500 mb-1">MODE</div>
+                <div class="flex gap-2 bg-black p-1 rounded">
+                    <button id="mode-normal" class="flex-1 bg-[#444] text-gray-400 p-2 text-xs font-bold hover:bg-[#555]" onclick="setMode('normal')">NORMAL</button>
+                    <button id="mode-endless" class="flex-1 bg-transparent text-gray-600 p-2 text-xs font-bold hover:bg-[#222]" onclick="setMode('endless')">ENDLESS</button>
+                </div>
+            </div>
+            <button id="start-btn" class="w-full bg-[#cc3333] text-white font-bold p-4 border-b-4 border-[#990000] active:border-b-0 active:translate-y-1 transition-all shadow-lg">
+                INITIATE
+            </button>
+        </div>
+        <button id="leaderboard-btn" class="mt-8 text-gray-600 underline text-xs hover:text-white">
+            Access Logs
+        </button>
+    </div>
+
+    <!-- Gameplay UI -->
+    <div id="game-ui" class="relative z-10 w-full max-w-lg h-full flex flex-col items-center justify-center p-4 opacity-0 transition-opacity duration-500 pointer-events-none">
+        
+        <div class="flex flex-row items-center justify-center mt-6">
+            <!-- Left Side: Stats & Controls -->
+            <div class="stats-container pointer-events-auto">
+                <div class="stat-group">
+                    <div class="dymo-label mb-1">LEVEL</div>
+                    <div class="lcd-module text-3xl">
+                        <span id="level-num">00</span><span id="level-max" class="text-sm opacity-50 ml-1">10</span>
+                    </div>
+                </div>
+                <div class="stat-group">
+                    <div class="dymo-label mb-1">TIMER</div>
+                    <div id="timer-display" class="lcd-module text-xl">00:00:00</div>
+                </div>
+                <div class="stat-group">
+                    <div class="dymo-label mb-1">BEST</div>
+                    <div id="best-time-display" class="lcd-module text-sm opacity-70">--:--:--</div>
+                </div>
+
+                <!-- Controls Cluster -->
+                <div class="w-full pt-4 border-t border-[#444] mt-2 flex flex-col gap-3">
+                    <button id="leaderboard-btn-game" class="control-btn">LOGS</button>
+                    <div class="flex gap-2">
+                        <button id="sound-btn" class="control-btn" style="flex: 1;">SND: OFF</button>
+                        <button id="restart-game-btn" class="control-btn control-btn-red" style="flex: 1;">STOP</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Center: The Pipe Artifact -->
+            <div class="pipe-assembly">
+                <div class="pipe-body" id="tube-grid">
+                    <!-- LEDs injected here -->
+                </div>
+                
+                <!-- Power Cable -->
+                <div class="power-connector">
+                    <div class="power-wire"></div>
+                </div>
+
+                <!-- The Button on the Side -->
+                <div class="switch-assembly" id="switch-mech">
+                    <div class="switch-hitbox pointer-events-auto" id="trigger-btn"></div>
+                    <div class="switch-housing"></div>
+                    <div class="switch-plunger"></div>
+                </div>
+            </div>
+
+            <!-- Right Side: Spacer to center the pipe -->
+            <div class="ml-8 w-8"></div> 
+
+        </div>
+
+    </div>
+
+    <!-- Wait Indicator (Invisible) -->
+    <div id="wait-indicator" class="hidden"></div>
+
+    <!-- Modals (OVERLAYS) -->
+    <div id="leaderboard-modal" class="hidden fixed inset-0 z-[70] flex items-center justify-center p-6 bg-black/80 backdrop-blur-sm pointer-events-auto">
+        <div class="modal-card w-full max-w-md p-6 flex flex-col max-h-[80vh]">
+            <div class="flex justify-between items-center mb-4 border-b border-gray-600 pb-2">
+                <div class="dymo-label">LOGBOOK</div>
+                <button id="close-leaderboard" class="font-bold text-red-500">X</button>
+            </div>
+            <div id="leaderboard-list" class="space-y-2 text-sm overflow-y-auto flex-1 font-mono bg-black text-green-500 border border-gray-600 p-4 shadow-inner h-64"></div>
+        </div>
+    </div>
+
+    <!-- Result Overlay -->
+    <div id="result-modal" class="hidden absolute inset-0 z-[60] flex flex-col items-center justify-center p-6 bg-black/60 backdrop-blur-md pointer-events-auto transition-opacity duration-300">
+        <div class="bg-[#333] p-6 border-4 border-[#111] shadow-2xl flex flex-col items-center w-full max-w-xs rotate-1 ring-4 ring-black/50">
+            <h2 id="result-title" class="text-4xl font-black text-white mb-2 tracking-widest uppercase">DONE</h2>
+            <div id="result-subtitle" class="dymo-label mb-6 bg-black text-gray-400 border-none shadow-none">SEQUENCE ENDED</div>
+            <div class="w-full mb-1 text-xs text-gray-400 font-bold ml-1">FINAL STATS</div>
+            <div class="bg-[#9ea792] border-4 border-[#222] p-3 w-full mb-4 font-mono text-center text-3xl text-[#222] shadow-inner rounded tracking-widest font-black">
+                <div id="final-time">00:00:00</div>
+            </div>
+            <div class="flex justify-between w-full px-2 text-xs font-bold text-gray-500 mb-6">
+                <span>ERRORS</span>
+                <span id="mistake-count" class="text-red-500 text-lg">0</span>
+            </div>
+            <button id="restart-btn" class="w-full bg-[#cc3333] text-white font-bold p-3 border-b-4 border-[#990000] active:border-b-0 active:translate-y-1 transition-all shadow-lg uppercase tracking-widest">
+                RESET SYSTEM
+            </button>
+        </div>
+    </div>
+
+    <script>
+        /* --- CONFIG --- */
+        const LEVELS = 10; 
+        const COLORS = Array(12).fill('#ff1a1a');
+        
+        /* --- STATE --- */
+        const state = {
+            gameMode: 'normal',
+            playing: false,
+            level: 0,
+            hasStartedAscent: false,
+            lightOn: false,
+            timerId: null,
+            stopwatchId: null,
+            startTime: 0,
+            mistakes: 0,
+            bestTime: null,
+            muted: true, // Defaulting sound to OFF as requested
+            playerName: "",
+            inputLocked: false
+        };
+
+        const ui = {
+            tube: document.getElementById('tube-grid'),
+            level: document.getElementById('level-num'),
+            levelMax: document.getElementById('level-max'),
+            timer: document.getElementById('timer-display'),
+            bestTime: document.getElementById('best-time-display'),
+            intro: document.getElementById('intro-screen'),
+            game: document.getElementById('game-ui'),
+            resultModal: document.getElementById('result-modal'),
+            leaderboardModal: document.getElementById('leaderboard-modal'),
+            leaderboardList: document.getElementById('leaderboard-list'),
+            finalTime: document.getElementById('final-time'),
+            mistakeCount: document.getElementById('mistake-count'),
+            soundBtn: document.getElementById('sound-btn'),
+            restartGameBtn: document.getElementById('restart-game-btn'),
+            leaderboardBtn: document.getElementById('leaderboard-btn'),
+            leaderboardBtnGame: document.getElementById('leaderboard-btn-game'),
+            nameInput: document.getElementById('player-name'),
+            switchMech: document.getElementById('switch-mech')
+        };
+
+        /* --- AUDIO --- */
+        class AudioEngine {
+            constructor() {
+                this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                this.master = this.ctx.createGain();
+                this.master.gain.value = 0.4;
+                this.master.connect(this.ctx.destination);
+            }
+            playClick() {
+                // Short, sharp high pitch "tick" (Piezo style)
+                if (state.muted || this.ctx.state === 'suspended') { if(!state.muted) this.ctx.resume(); return; }
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'square';
+                const now = this.ctx.currentTime;
+                // High blip
+                osc.frequency.setValueAtTime(2000, now);
+                osc.frequency.exponentialRampToValueAtTime(1000, now + 0.02);
+                gain.gain.setValueAtTime(0.15, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.02);
+                osc.connect(gain);
+                gain.connect(this.master);
+                osc.start();
+                osc.stop(now + 0.03);
+            }
+            playHit() {
+                // Success: 555 Timer two-tone climb
+                if (state.muted || this.ctx.state === 'suspended') { if(!state.muted) this.ctx.resume(); return; }
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'square'; 
+                // Two tones
+                osc.frequency.setValueAtTime(440 + (state.level * 50), now);
+                osc.frequency.setValueAtTime(880 + (state.level * 100), now + 0.05);
+                
+                gain.gain.setValueAtTime(0.1, now);
+                gain.gain.linearRampToValueAtTime(0.1, now + 0.1);
+                gain.gain.linearRampToValueAtTime(0, now + 0.15);
+                osc.connect(gain);
+                gain.connect(this.master);
+                osc.start();
+                osc.stop(now + 0.15);
+            }
+            playFail() {
+                // Fail: Low flat buzzer
+                if (state.muted || this.ctx.state === 'suspended') { if(!state.muted) this.ctx.resume(); return; }
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'square'; // Buzzier than sawtooth
+                osc.frequency.setValueAtTime(150, now); // Low buzz
+                gain.gain.setValueAtTime(0.3, now);
+                gain.gain.linearRampToValueAtTime(0, now + 0.4);
+                osc.connect(gain);
+                gain.connect(this.master);
+                osc.start();
+                osc.stop(now + 0.4);
+            }
+            playWin() {
+                if (state.muted || this.ctx.state === 'suspended') { if(!state.muted) this.ctx.resume(); return; }
+                // Arpeggio
+                [523, 659, 783, 1046].forEach((f, i) => {
+                    setTimeout(() => {
+                        const now = this.ctx.currentTime;
+                        const osc = this.ctx.createOscillator();
+                        const gain = this.ctx.createGain();
+                        osc.type = 'square';
+                        osc.frequency.value = f;
+                        gain.gain.setValueAtTime(0.1, now);
+                        gain.gain.linearRampToValueAtTime(0, now + 0.1);
+                        osc.connect(gain);
+                        gain.connect(this.master);
+                        osc.start();
+                        osc.stop(now + 0.1);
+                    }, i * 100);
+                });
+            }
+        }
+        
+        let audio;
+
+        /* --- GAME ENGINE --- */
+        function setMode(mode) {
+            state.gameMode = mode;
+            document.getElementById('mode-normal').style.backgroundColor = mode === 'normal' ? '#444' : 'transparent';
+            document.getElementById('mode-normal').style.color = mode === 'normal' ? '#ccc' : '#666';
+            document.getElementById('mode-endless').style.backgroundColor = mode === 'endless' ? '#444' : 'transparent';
+            document.getElementById('mode-endless').style.color = mode === 'endless' ? '#ccc' : '#666';
+        }
+
+        function init() {
+            loadData();
+            if (!state.playerName) state.playerName = generateCallsign();
+            ui.nameInput.value = state.playerName; 
+            ui.soundBtn.innerText = state.muted ? 'SND: OFF' : 'SND: ON';
+            
+            ui.tube.innerHTML = '';
+            const slots = state.gameMode === 'normal' ? LEVELS : 10;
+            for (let i = 0; i < slots; i++) {
+                const slot = document.createElement('div');
+                slot.className = 'led-slot';
+                slot.id = `slot-${i}`;
+                const inner = document.createElement('div');
+                inner.className = 'led-bulb'; 
+                slot.appendChild(inner);
+                ui.tube.appendChild(slot);
+            }
+        }
+
+        function startGame() {
+            if (!audio) audio = new AudioEngine();
+            const rawName = ui.nameInput.value;
+            const safeName = validateAndSanitizeName(rawName);
+            state.playerName = safeName;
+            ui.nameInput.value = safeName;
+            saveData();
+
+            ui.intro.style.opacity = '0';
+            ui.resultModal.style.display = 'none';
+            ui.leaderboardModal.style.display = 'none';
+            
+            setTimeout(() => {
+                ui.intro.style.display = 'none';
+                ui.game.style.opacity = '1';
+                ui.game.style.pointerEvents = 'auto';
+            }, 500);
+
+            state.playing = false;
+            clearTimeout(state.timerId);
+            cancelAnimationFrame(state.stopwatchId);
+
+            state.playing = true;
+            state.level = 0;
+            state.mistakes = 0;
+            state.hasStartedAscent = false;
+            state.inputLocked = false;
+            ui.timer.innerText = "00:00:00";
+            
+            if (state.gameMode === 'endless') ui.levelMax.innerText = "";
+            else ui.levelMax.innerText = "10";
+            
+            startLevel();
+        }
+
+        function getWeightedRandomDelay() {
+            // PROBABILITY BUCKETS FOR GAP TIME (Start of Level)
+            const roll = Math.random();
+            if (roll < 0.15) return 50;                  // 15% INSTANT (0.05s)
+            if (roll < 0.50) return 200 + Math.random() * 200; // 35% FAST (0.2s - 0.4s)
+            if (roll < 0.80) return 500 + Math.random() * 500; // 30% HESITATION (0.5s - 1.0s)
+            if (roll < 0.95) return 1500 + Math.random() * 1000; // 15% LONG WAIT (1.5s - 2.5s)
+            return 2500 + Math.random() * 1000;          // 5% BROKEN (2.5s - 3.5s)
+        }
+
+        function startLevel() {
+            clearTimeout(state.timerId);
+            state.lightOn = false;
+            state.inputLocked = false;
+            
+            const displayLevel = state.level + 1;
+            ui.level.innerText = displayLevel.toString().padStart(2, '0');
+            
+            renderGrid();
+
+            // LEVEL 0: Standard short wait to start
+            // LEVEL 1+: Chaos Math applied to the gap
+            const delay = state.level === 0 ? 500 : getWeightedRandomDelay();
+            
+            state.timerId = setTimeout(() => {
+                runCycle();
+            }, delay);
+        }
+
+        function runCycle() {
+            if (!state.playing) return;
+
+            // --- INACTION CHECK ---
+            if (state.lightOn) {
+                if (!state.hasStartedAscent) {
+                    // Safe mode (Lvl 0): Just loop
+                    state.lightOn = false;
+                    renderVisuals();
+                    // Level 0 Loop (Standard Metronome)
+                    state.timerId = setTimeout(runCycle, 600);
+                    return;
+                } else {
+                    handleFail();
+                    return;
+                }
+            }
+
+            // TOGGLE STATE
+            state.lightOn = !state.lightOn;
+            renderVisuals();
+
+            // --- DURATION LOGIC ---
+            let duration = 600;
+
+            if (state.level === 0) {
+                duration = 600; // Metronome
+            } else {
+                if (state.lightOn) {
+                    // ON Duration: Reaction Window
+                    // Starts at 500ms, drops to 150ms
+                    duration = Math.max(150, 500 - (state.level * 30));
+                    // Minor jitter
+                    duration = duration * (0.9 + Math.random() * 0.2); 
+                } else {
+                    // OFF Duration: CHAOS BUCKETS
+                    // This is the wait time before the NEXT flash (if we miss it or loop)
+                    // Note: This logic runs if the light turns OFF naturally (missed)
+                    // But in a game loop, usually we click while it's ON.
+                    // This part mainly affects the flicker/stutter patterns if we miss level 0
+                    // or if we implement complex patterns where light flickers mid-level.
+                    // For now, simpler is better for "Reflex" game.
+                    
+                    // We stick to the standard gap logic for the loop
+                    const roll = Math.random();
+                    if (roll < 0.20) duration = 50 + Math.random() * 100;
+                    else if (roll < 0.60) duration = 150 + Math.random() * 250;
+                    else duration = 400 + Math.random() * 600;
+                }
+            }
+
+            state.timerId = setTimeout(runCycle, duration);
+        }
+
+        function renderVisuals() {
+            if (state.lightOn && audio) audio.playClick();
+            renderGrid();
+        }
+
+        function renderGrid() {
+            const slots = state.gameMode === 'normal' ? LEVELS : 10;
+            
+            for(let i=0; i<slots; i++) {
+                const s = document.getElementById(`slot-${i}`);
+                const levelInSet = state.level % slots;
+                if (i < levelInSet) {
+                    s.classList.add('completed');
+                    s.classList.remove('active');
+                } else if (i === levelInSet) {
+                    s.classList.remove('completed');
+                    if (state.lightOn) s.classList.add('active');
+                    else s.classList.remove('active');
+                } else {
+                    s.classList.remove('completed');
+                    s.classList.remove('active');
+                }
+            }
+        }
+
+        function handleInput() {
+            if (!state.playing) return;
+            if (state.inputLocked) return; 
+
+            ui.switchMech.classList.add('pressed');
+            setTimeout(() => ui.switchMech.classList.remove('pressed'), 100);
+
+            if (state.lightOn) {
+                // SUCCESS
+                if (!state.hasStartedAscent) {
+                    state.hasStartedAscent = true;
+                    startStopwatch();
+                }
+                if (navigator.vibrate) navigator.vibrate(20);
+                audio.playHit();
+                state.level++;
+
+                if (state.gameMode === 'normal' && state.level >= LEVELS) winGame();
+                else startLevel(); // Applies Random Delay here
+            } else {
+                // FAIL
+                if (!state.hasStartedAscent) {
+                    audio.playFail(); 
+                    return; 
+                }
+                handleFail();
+            }
+        }
+
+        function handleFail() {
+            if (!state.playing) return;
+            
+            state.inputLocked = true;
+            
+            if (navigator.vibrate) navigator.vibrate(100);
+            audio.playFail();
+            state.mistakes++;
+            
+            if (state.level > 0) state.level--;
+            
+            // GAME OVER Check
+            if (state.level === 0 && state.hasStartedAscent) {
+                renderGrid();
+                setTimeout(() => { gameOver(); }, 300);
+                return;
+            }
+
+            renderGrid();
+            clearTimeout(state.timerId);
+            state.lightOn = false; 
+            renderVisuals();
+            
+            setTimeout(startLevel, 500);
+        }
+
+        function formatTime(ms) {
+            const minutes = Math.floor(ms / 60000);
+            const seconds = Math.floor((ms % 60000) / 1000);
+            const centis = Math.floor((ms % 1000) / 10);
+            return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}:${centis.toString().padStart(2, '0')}`;
+        }
+        function startStopwatch() { state.startTime = Date.now(); updateStopwatch(); }
+        function updateStopwatch() {
+            if (!state.playing) return;
+            ui.timer.innerText = formatTime(Date.now() - state.startTime);
+            state.stopwatchId = requestAnimationFrame(updateStopwatch);
+        }
+        function winGame() { endGame("CLEARED", "MISSION COMPLETE", true); }
+        function gameOver() { endGame("FAILURE", "SYSTEM HALT", false); }
+        function endGame(title, subtitle, isWin) {
+            state.playing = false;
+            cancelAnimationFrame(state.stopwatchId);
+            clearTimeout(state.timerId);
+            const finalTime = Date.now() - state.startTime;
+            
+            if(isWin) audio.playWin();
+            else audio.playFail();
+
+            if(isWin && (!state.bestTime || finalTime < state.bestTime)) {
+                state.bestTime = finalTime;
+                saveData();
+                ui.bestTime.innerText = `PB: ${formatTime(finalTime)}`;
+            }
+            
+            if (window.submitScoreToCloud) {
+                window.submitScoreToCloud(state.playerName, state.level, finalTime, state.gameMode);
+            }
+
+            document.getElementById('result-title').innerText = title;
+            document.getElementById('result-subtitle').innerText = subtitle;
+            ui.finalTime.innerText = formatTime(finalTime);
+            ui.mistakeCount.innerText = state.mistakes;
+            
+            ui.resultModal.style.display = 'flex';
+            ui.resultModal.style.pointerEvents = 'auto';
+        }
+
+        function saveData() { 
+            if(state.bestTime) localStorage.setItem('reflex_best_time', state.bestTime); 
+            localStorage.setItem('reflex_muted', state.muted);
+            localStorage.setItem('reflex_player_name', state.playerName);
+        }
+        function loadData() {
+            const t = localStorage.getItem('reflex_best_time');
+            if(t) { state.bestTime = parseInt(t); ui.bestTime.innerText = `PB: ${formatTime(state.bestTime)}`; }
+            const m = localStorage.getItem('reflex_muted');
+            if(m === 'true') { state.muted = true; applyMute(); }
+            const n = localStorage.getItem('reflex_player_name');
+            if(n) { state.playerName = n; }
+        }
+        function toggleSound() { state.muted = !state.muted; applyMute(); saveData(); }
+        function applyMute() {
+            ui.soundBtn.innerText = state.muted ? 'SND: OFF' : 'SND: ON';
+        }
+        
+        async function displayGlobalLeaderboard() {
+            ui.leaderboardModal.style.display = 'flex';
+            ui.leaderboardList.innerHTML = '<div class="text-center p-4">LOADING DATA...</div>';
+            
+            const scores = await window.fetchGlobalLeaderboard(state.gameMode);
+            const myId = window.getCurrentUserId();
+            
+            if (scores.length === 0) {
+                ui.leaderboardList.innerHTML = '<div class="text-center p-4">NO RECORDS</div>';
+                return;
+            }
+
+            let html = '';
+            scores.forEach((entry, index) => {
+                const rank = index + 1;
+                const isUser = entry.userId === myId;
+                const highlight = isUser ? "font-bold bg-yellow-100 text-black" : "text-green-500";
+                const scoreDisplay = state.gameMode === 'endless' ? `LVL ${entry.score}` : formatTime(entry.time);
+
+                html += `
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 5px; padding: 4px;" class="${highlight}">
+                        <span>${rank}. ${entry.name}</span>
+                        <span>${scoreDisplay}</span>
+                    </div>
+                `;
+            });
+            ui.leaderboardList.innerHTML = html;
+        }
+
+        function generateCallsign() {
+            return `UNIT-${Math.floor(Math.random() * 9000) + 1000}`;
+        }
+
+        function validateAndSanitizeName(name) {
+            let clean = name.toUpperCase().replace(/[^A-Z0-9-]/g, '');
+            if (clean.length < 3 || clean.length > 12) return generateCallsign();
+            const BAD_WORDS = ["BS", "CRAP", "DAMN", "HELL", "SUCK", "WTF", "XXX", "SEX", "DICK", "COCK", "PUSSY", "FUCK", "SHIT", "ASS", "CUNT", "BITCH", "NIGGA", "NIGGER", "FAG", "DYKE"]; 
+            for(let word of BAD_WORDS) if(clean.includes(word)) return generateCallsign();
+            return clean;
+        }
+
+        ui.leaderboardBtn.addEventListener('click', displayGlobalLeaderboard);
+        ui.leaderboardBtnGame.addEventListener('click', displayGlobalLeaderboard);
+        document.getElementById('close-leaderboard').addEventListener('click', ()=>{ui.leaderboardModal.style.display='none'});
+        document.getElementById('start-btn').addEventListener('click', startGame);
+        document.getElementById('restart-btn').addEventListener('click', startGame);
+        ui.restartGameBtn.addEventListener('click', startGame);
+        
+        const btn = document.getElementById('trigger-btn');
+        btn.addEventListener('pointerdown', (e) => {
+            e.preventDefault(); 
+            handleInput();
+        });
+        
+        window.addEventListener('keydown', (e) => {
+            if(e.code==='Space'||e.code==='Enter') {
+                if(ui.intro.style.display!=='none') startGame();
+                else if(ui.resultModal.style.display==='flex') startGame();
+                else if(ui.leaderboardModal.style.display==='flex') ui.leaderboardModal.style.display='none';
+                else { handleInput(); }
+            }
+        });
+        init();
+    </script>
+</body>
+</html>
